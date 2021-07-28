@@ -141,8 +141,8 @@ cardano-cli transaction sign \
 
 ______________________________________
  
- cardano-cli transaction submit \
+cardano-cli transaction submit \
  --tx-file tx.signed \
-  --mainnet
+ --mainnet
 
 ______________________________________
