@@ -1,0 +1,148 @@
+#Commands for one-time mint of Cardano native assets (tokens), with no residual ADA left in the payment address used to mint the tokens. 
+#(all remaining ADA goes to receiver address with the tokens)
+______________________________________
+
+export CARDANO_NODE_SOCKET_PATH="/AAAAA/AAAAAA/AAAAAAA/AAAAAA/socket"
+
+______________________________________
+
+tokenname="AAAAA"
+tokenamount="10"
+fee="0"
+output="0"
+receiver="addr000000000000000000000000000000000000000000000000000000000000000000000000000"
+
+______________________________________
+
+cardano-cli address key-gen --verification-key-file payment.vkey --signing-key-file payment.skey
+
+______________________________________
+
+cardano-cli address build --payment-verification-key-file payment.vkey --out-file payment.addr --mainnet
+
+______________________________________
+
+#Send 2ADA to the above address - payment.addr
+
+______________________________________
+
+cardano-cli query protocol-parameters --mainnet --out-file protocol.json
+
+______________________________________
+
+mkdir policy
+
+______________________________________
+
+cardano-cli address key-gen --verification-key-file policy.vkey --signing-key-file policy.skey
+
+______________________________________
+
+touch policy/policy.script && echo "" > policy/policy.script
+
+______________________________________
+
+#Paste below into script file (located in your cardano-my-node policy directory) and save.
+
+{
+    "scripts": [
+        {
+            "keyHash": "00000000000000000000000000000000000",
+            "type": "sig"
+        },
+        {
+            "slot": 00000000,
+            "type": "before"
+        }
+    ],
+    "type": "all"
+}
+
+______________________________________
+
+scriptpath="/AAAAA/AAAAAAA/AAAAAA/AAAAA/policy.script"
+
+______________________________________
+#Run below command and paste output into above script "keyHash" field
+
+cardano-cli address key-hash --payment-verification-key-file policy.vkey
+
+______________________________________
+#Run below command and paste output into above script "slot" section, plus add 2000 slots (33 minutes) and save.
+
+cardano-cli query tip --mainnet
+
+______________________________________
+
+cardano-cli transaction policyid --script-file ./policy/policy.script >> policy/policyID
+
+______________________________________
+
+cardano-cli query utxo --address $(cat payment.addr) --mainnet
+
+______________________________________
+
+#Use the info from the above command to populate these values.
+txhash="00000000000000000000000000000000000000000000000"
+txix="0"
+funds="2000000"
+policyid=$(cardano-cli transaction policyid --script-file ./policy/policy.script)
+
+______________________________________
+
+currentSlot=$(cardano-cli query tip --mainnet | jq -r '.slot')
+echo Current Slot: $currentSlot
+
+______________________________________
+
+cardano-cli transaction build-raw \
+ --tx-in $txhash#$txix \
+ --tx-out $receiver+$output+"$tokenamount $policyid.$tokenname" \
+ --mint "$tokenamount $policyid.$tokenname" \
+ --minting-script-file $scriptpath \
+ --invalid-hereafter $(( ${currentSlot} + 1000)) \
+ --fee $fee \
+ --out-file tx.raw
+
+______________________________________
+
+minfee=$(cardano-cli transaction calculate-min-fee \
+--tx-body-file tx.raw \
+--tx-in-count 1 \
+--tx-out-count 1 \
+--mainnet \
+--witness-count 1 \
+--byron-witness-count 0 \
+--protocol-params-file protocol.json | awk '{ print $1 }')
+
+______________________________________
+
+output=$((${funds}-${minfee}))
+
+______________________________________
+
+cardano-cli transaction build-raw \
+ --tx-in $txhash#$txix \
+ --tx-out $receiver+$output+"$tokenamount $policyid.$tokenname" \
+ --mint "$tokenamount $policyid.$tokenname" \
+ --minting-script-file $scriptpath \
+ --invalid-hereafter $(( ${currentSlot} + 1000)) \
+ --fee $minfee \
+ --out-file tx.raw
+
+______________________________________
+
+cardano-cli transaction sign \
+ --tx-body-file tx.raw \
+ --signing-key-file policy.skey \
+ --signing-key-file payment.skey \
+ --mainnet \
+ --out-file tx.signed
+
+______________________________________
+ 
+ cardano-cli transaction submit \
+ --tx-file tx.signed \
+  --mainnet
+
+______________________________________
