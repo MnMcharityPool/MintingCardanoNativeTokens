@@ -1,5 +1,6 @@
 #Commands for one-time mint of Cardano native assets (tokens), with no residual ADA left in the payment address used to mint the tokens. 
-#(all remaining ADA goes to receiver address with the tokens)
+#(all remaining ADA goes to receiver address with the tokens.  No ADA left behind.)
+#See my video walkthrough of these instructions https://youtu.be/lZBGTY_luzo
 ______________________________________
 
 export CARDANO_NODE_SOCKET_PATH="/AAAAA/AAAAAA/AAAAAAA/AAAAAA/socket"
