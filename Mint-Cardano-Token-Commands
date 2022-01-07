@@ -7,7 +7,7 @@ export CARDANO_NODE_SOCKET_PATH="/AAAAA/AAAAAA/AAAAAAA/AAAAAA/socket"
 
 ______________________________________
 
-#The command below will turn your asset name into a string of characters called a base16 code.  Use this base16 string to populate "tokenname" in the next command.
+#Update 07 Jan 2022.  Asset name process has changed.  The command below will turn your asset name into a string of characters called a base16 code.  Use this base16 string to populate "tokenname" in the next command.
 
 echo -n "TheAssetNameYouWant" | xxd -ps
 
